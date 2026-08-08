@@ -115,3 +115,14 @@ GO
 #### Anomaly Log & Data Cleaning Protocol:
 1. **Unassigned / NULL Rate Codes (291,055 trips / 3%):** Represents meter communication failures or automated third-party dispatches. In production reporting, these trips should be labeled as `"Unassigned Meter"` rather than discarded, as they hold valid monetary and location data.
 2. **Vendor Diagnostic Code 99 (32,477 trips):** Confirmed as internal hardware diagnostic or manual vendor testing logs. These need to be flagged during rate-tier analysis to prevent skewing average standard trip metrics.
+### Q2.2: Data Hygiene & Anomaly Audit (Dirty Data Log)
+
+#### Part 1: Timestamp & Trip Duration Integrity
+
+| Metric Audited | Audit Condition | Record Count | % of Dataset | Business & Analytical Context |
+| :--- | :--- | :--- | :--- | :--- |
+| **Missing Timestamps** | `pickup IS NULL OR dropoff IS NULL` | **0** | **0.00%** | **Perfect Ingestion:** 100% of trip records contain valid meter timestamps. |
+| **Invalid Trip Durations** | `dropoff <= pickup` | **8,412** | **~0.09%** | **Meter Glitches / Cancellations:** Driver instantly canceled or clicked start/stop simultaneously, resulting in zero or negative trip duration. |
+
+#### Data Cleaning Protocol:
+* **Production Filter:** Exclude records where `tpep_dropoff_datetime <= tpep_pickup_datetime` when computing trip duration metrics (e.g., Average Speed, Trip Duration Distribution, Hourly Utilization) to prevent skewed duration baselines.
