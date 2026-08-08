@@ -75,7 +75,7 @@ GO
 | `yellow_tripdata_2022` | `tpep_dropoff_datetime` | `DATETIME2` | YES | Meter stop timestamp |
 | `yellow_tripdata_2022` | `passenger_count` | `FLOAT` | YES | Passenger count (stored as float due to NULL handling) |
 | `yellow_tripdata_2022` | `trip_distance` | `FLOAT` | YES | Odometer trip distance in miles |
-| `yellow_tripdata_2022` | `rate-code_id` | `FLOAT` | YES | Fare rate tier ID (stored as float) |
+| `yellow_tripdata_2022` | `rate_code_id` | `FLOAT` | YES | Fare rate tier ID (stored as float) |
 | `yellow_tripdata_2022` | `store_and_fwd_flag` | `VARCHAR` | YES | In-vehicle memory flag (`Y`/`N`) |
 | `yellow_tripdata_2022` | `pu_location_id` | `INT` | YES | **Foreign Key** → `taxi_zone_lookup.location_id` |
 | `yellow_tripdata_2022` | `do_location_id` | `INT` | YES | **Foreign Key** → `taxi_zone_lookup.location_id` |
