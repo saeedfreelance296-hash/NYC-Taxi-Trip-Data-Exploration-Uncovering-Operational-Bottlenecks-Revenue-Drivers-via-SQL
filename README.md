@@ -191,3 +191,147 @@ GO
 1. **Daily Volume Peak (18:00 / 6 PM):** Highest ride concentration of the day with **667,030 trips (7.36% of total volume)** as corporate office departures merge with evening leisure traffic.
 2. **Congestion Bottleneck Peak (15:00 / 3 PM):** Reaches the longest average duration of **17.95 minutes per trip**. This reflects the daily TLC shift changeover window combined with mid-town afternoon street traffic.
 3. **Traffic Speed Efficiency Window (21:00 / 9 PM):** Average trip duration drops to a daily low of **13.74 minutes**, indicating minimal street friction and faster transit times across Midtown/Downtown.
+
+### Q4.1: Summary Statistics & Operational Distribution
+
+| Variable | Min | Avg | Max | Std Dev | Data Quality & Operational Takeaway |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Trip Distance (Miles)** | 0.01 | **5.77** | 348,798.53 | 593.91 | **Extreme Outlier Alert:** The average distance is ~5.77 miles, but extreme maximum outliers (~348k miles) indicate odometer hardware glitches or corrupted meter log transmissions. |
+| **Base Fare Amount ($)** | $0.01 | **$13.39** | $401,092.32 | $134.83 | **Core Revenue Baseline:** The average base fare across valid non-negative trips is $13.39, with extreme multi-hundred-thousand dollar outliers skewing standard deviation. |
+| **Total Amount ($)** | $0.31 | **$19.90** | $401,095.62 | $135.13 | **Gross Ticket Size:** Including surcharges, tolls, fees, and credit card tips, the true average total cost per trip is $19.90. |
+
+#### Data Cleaning & Dashboard Filtering Protocol:
+* **Metric Truncation / Winsorization:** To calculate true operational averages (e.g., Average Trip Distance or Revenue per Mile) without skewing business decisions, extreme outliers (e.g., `trip_distance > 500 miles` or `total_amount > $1,000`) must be trimmed using percentile boundaries (e.g., 99.9th percentile) or operational capping filters in downstream SQL views.
+
+### Q4.2: Credit Card vs. Cash Tipping Behavior Analysis
+
+| Payment Description | Total Tips ($) | Avg Tip ($) | Total Base Fare ($) | Effective Tip Ratio (%) | Analytical & Operational Context |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Credit Card** | **$22,005,628.87** | **$3.16** | **$93,129,144.35** | **23.63%** | **In-Cab Terminal Prompts:** Digital payment readers offer preset tip options (15%, 20%, 25%), capturing an effective 23.63% gratuity relative to base fare. |
+| **Cash** | $1,235.14 | $0.00 | $22,644,580.57 | **0.01%** | **Unrecorded Cash Gratuities:** Drivers receive cash tips directly without logging them into the meter terminal, resulting in an artificial near-zero tip record ($1,235 total across 1.7M trips). |
+
+#### Analytical Takeaway & Pipeline Rule:
+* **Metric Isolation:** Any KPI calculation assessing driver tip earnings, gratuity percentages, or total compensation **must filter exclusively for `payment_type = 1` (Credit Card)**. Blending cash records into overall tipping averages falsely depresses overall tips and misleads revenue reporting.
+
+### Q4.3: Total Revenue Stream & Fee Breakdown Analysis
+
+| Revenue Component | Aggregate Value ($) | Share of Total Revenue (%) | Strategic & Operational Context |
+| :--- | :--- | :--- | :--- |
+| **Base Fare Amount** | ~$122,200,560.77 | **67.58%** | **Core Service Value:** Metered distance/time charges form the foundational 2/3 of all TLC gross receipts. |
+| **Tips (Gratuities)** | ~$22,946,509.56 | **12.69%** | **Primary Driver Earnings Driver:** Digital credit card tipping accounts for over an eighth of total collected revenue. |
+| **Congestion Surcharge** | ~$20,270,320.90 | **11.21%** | **Regulatory Surcharge:** NYC MTA congestion fee levied on trips traversing Manhattan below 96th Street. |
+| **Tolls Amount** | ~$3,851,541.80 | **2.13%** | **Infrastructure Reimbursables:** Pass-through toll collections primarily for inter-borough bridges, tunnels, and airport access. |
+| **Gross Total Revenue** | **$180,823,558.40** | **100.00%** | **Q1 2022 Gross Benchmark:** Total top-line gross dollar intake across all valid trips. |
+
+#### Financial Takeaway:
+* Non-fare components (tips, congestion fees, tolls, and mandatory surcharges) make up **over 32% of total passenger expenditure**.
+
+  ## 5. Magnitude & Spatial Revenue Analysis
+
+### Q5.1: Volume and Gross Revenue by Pickup Borough
+
+| Pickup Borough | Total Trips | Share of Trips (%) | Gross Revenue ($) | Share of Revenue (%) | Operational & Spatial Context |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Manhattan** | 8,202,816 | 89.96% | $139,599,459.05 | 77.54% | **Dominant Core Market:** Manhattan generates 9 out of 10 taxi pickups and over three-quarters of total gross revenue. |
+| **Queens** | 684,345 | 7.50% | $34,617,929.42 | 19.23% | **Airport Revenue Surge:** Home to JFK and LaGuardia airports. High average fare per trip inflates its revenue share relative to volume. |
+| **Unknown** | 87,491 | 0.96% | $2,376,823.22 | 1.32% | **Unmapped Terminals:** Pickups in unassigned or corrupted location IDs. |
+| **Brooklyn** | 57,348 | 0.63% | $1,568,347.65 | 0.87% | Secondary outer-borough market heavily served by green taxis and rideshares rather than yellow cabs. |
+| **N/A** | 24,777 | 0.27% | $1,294,173.81 | 0.72% | Uncategorized location zones. |
+| **Bronx** | 12,552 | 0.14% | $411,647.19 | 0.23% | Low yellow taxi penetration zone. |
+| **EWR (Newark)** | 1,337 | 0.01% | $127,010.01 | 0.07% | Out-of-state airport pickups. |
+| **Staten Island**| 578 | 0.01% | $40,124.52 | 0.02% | Lowest demand volume in NYC. |
+| **Total** | **9,118,244** | **100.00%** | **$180,035,514.87** | **100.00%** | **Q1 2022 Spatial Revenue Baseline** |
+
+#### Spatial Takeaway:
+* **Manhattan & Queens duopoly:** Together, Manhattan and Queens represent **97.46% of total NYC yellow cab revenue** ($174.2M out of $180M), confirming that yellow taxi fleet deployment should be concentrated almost exclusively in Manhattan corridors and airport transit routes.
+
+  ### Q5.3: Borough Trip Efficiency & Revenue Density Analysis
+
+| Pickup Borough | Gross Revenue ($) | Total Miles Driven | Avg Revenue / Mile ($) | Base Fare ($) | Total Rides | Avg Base Fare / Ride ($) | Operational Efficiency Context |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Manhattan** | $138,694,843.46 | 37,830,640.96 | **$3.67** | $90,362,611.62 | 8,107,786 | **$11.15** | **Dense Congestion Core:** High turnover, short trips (avg ~4.6 miles), and constant base fee pickups maximize revenue density per mile. |
+| **Queens** | $34,108,882.38 | 9,499,979.43 | **$3.59** | $25,344,135.04 | 653,244 | **$38.80** | **High-Yield Airport Runs:** Long-haul trips to JFK/LaGuardia generate over 3x the average base fare per ride compared to Manhattan. |
+| **Unknown** | $2,207,486.77 | 439,246.80 | **$5.03** | $1,564,439.43 | 81,586 | **$19.18** | **Unmapped Terminal Outliers:** Unassigned location IDs representing specialized transit zones. |
+| **Brooklyn** | $1,343,695.60 | 2,858,626.25 | **$0.47** | $1,082,133.88 | 50,800 | **$21.30** | **Long Deadhead Outer Mileage:** High mileage driven relative to metered fares indicates significant non-metered transit between drop-offs and pickups. |
+| **N/A** | $989,185.34 | 182,280.44 | **$5.43** | $953,975.09 | 21,831 | **$43.70** | Uncategorized zone logs showing high average ticket size. |
+| **Bronx** | $290,689.86 | 655,322.76 | **$0.44** | $258,917.17 | 9,410 | **$27.52** | **Low Yellow Taxi Penetration:** Long distances between dispatched fares result in low overall revenue per mile driven ($0.44/mi). |
+| **EWR (Newark)** | $31,217.33 | 1,059.86 | **$29.45** | $25,426.62 | 321 | **$79.21** | **Out-of-State Premium:** Out-of-state airport trips dominated by mandatory surcharges and premium flat rates. |
+| **Staten Island**| $27,264.21 | 6,734.17 | **$4.05** | $23,099.63 | 396 | **$58.33** | **Low-Volume Long Distance:** Infrequent, high-ticket long-distance trips. |
+
+#### Financial & Operational Takeaway:
+* **Volume vs. Ticket Size Trade-off:** **Manhattan** drives total revenue through volume and density ($3.67/mile over 8.1M trips), whereas **Queens** provides the highest per-trip yield ($38.80 base fare/ride) driven by airport transit. 
+* **Outer Borough Efficiency Drag:** Brooklyn and the Bronx exhibit low revenue per mile ($0.47 and $0.44 per mile), demonstrating that yellow cabs lose significant operational efficiency when operating outside Manhattan and major airport corridors.
+  
+### Step 6: Advanced Ranking & Window Functions
+
+#### Q6.1: Top 5 Taxi Zones by Revenue per Borough (DENSE_RANK)
+
+| Borough | Zone Rank | Taxi Zone | Total Trips | Gross Revenue ($) | Operational & Strategic Context |
+| :--- | :---: | :--- | :---: | :---: | :--- |
+| **Manhattan** | **#1** | **Upper East Side South** | 428,745 | **$6,479,343.35** | **Residential Core:** Dense residential corridor with constant daily commuter demand and short, high-turnover local rides. |
+| | **#2** | Upper East Side North | 404,597 | $6,425,574.83 | High-density residential turnover adjacent to medical centers (NewYork-Presbyterian / Mount Sinai). |
+| | **#3** | Midtown Center | 351,630 | $6,058,208.30 | Commercial business district driving prime weekday corporate transit. |
+| | **#4** | Penn Station / Madison Sq West | 293,049 | $5,080,925.59 | Major multi-modal transit hub; heavy rail passenger connections. |
+| | **#5** | Times Sq / Theatre District | 268,088 | $5,073,772.00 | Entertainment and tourism hub generating late afternoon and evening volume. |
+| **Queens** | **#1** | **JFK Airport** | 352,035 | **$21,344,994.12** | **Top NYC Single Zone Revenue:** Flat-rate airport tariffs, high tolls, and heavy tipping generate over $21.3M in gross revenue. |
+| | **#2** | LaGuardia Airport | 225,429 | $9,978,637.83 | Secondary airport hub driving high per-trip yields across short-to-mid distance routes. |
+| | **#3** | East Elmhurst | 32,279 | $1,388,731.40 | Zone adjacent to LGA capturing overflow airport transit and staging activity. |
+| | **#4** | Sunnyside | 7,056 | $178,217.30 | Queens-Manhattan bridge access corridor. |
+| | **#5** | Baisley Park | 1,854 | $123,260.30 | Industrial/cargo staging corridor near JFK Airport. |
+| **Brooklyn** | **#1** | **Downtown Brooklyn / MetroTech** | 5,228 | **$123,571.02** | Commercial and civic center anchoring outer-borough yellow cab demand. |
+| | **#2** | Brooklyn Heights | 4,521 | $112,206.11 | High-income residential district with frequent Manhattan-bound trips. |
+| | **#3** | Williamsburg (North Side) | 3,149 | $77,509.46 | Nightlife and dining hub generating late-night commuter traffic. |
+| | **#4** | Boerum Hill | 3,427 | $77,166.84 | Residential commuter zone adjacent to Downtown Brooklyn. |
+| | **#5** | Fort Greene | 3,399 | $75,155.13 | Cultural district (BAM) anchoring local intra-borough transit. |
+| **Bronx** | **#1** | **Mott Haven / Port Morris** | 919 | **$21,662.18** | Industrial/commercial hub near South Bronx Manhattan bridge crossings. |
+| | **#2** | Co-Op City | 475 | $18,839.28 | Massive residential complex generating long-distance borough-to-borough trips. |
+| | **#3** | West Concourse | 660 | $15,142.91 | Yankee Stadium and civic center corridor. |
+| | **#4** | Soundview / Castle Hill | 429 | $14,872.48 | Long-distance residential commutes. |
+| | **#5** | Williamsbridge / Olinville | 360 | $14,633.84 | Outer Bronx residential corridor. |
+| **EWR** | **#1** | **Newark Airport** | 321 | **$31,217.33** | Out-of-state airport destination with high surcharges (~$97 avg gross per trip). |
+| **Staten Island** | **#1** | **Arden Heights** | 108 | **$9,384.95** | Low-density suburban commute zone. |
+
+#### Key Analytical Insights:
+1. **JFK Airport Single-Zone Dominance:** Gross revenue generated at JFK Airport ($21.34M) exceeds the top 3 Manhattan zones combined ($18.96M), proving that **airport flat-rate tariffs generate the highest revenue concentration** in the entire NYC taxi network.
+2. **Manhattan Spatial Clustering:** The top 5 Manhattan zones alone account for **$29.1M (over 20% of total Manhattan revenue)**, split evenly between high-density residential hubs (Upper East Side) and transit/business centers (Midtown, Penn Station).
+
+### Step 6: Advanced Ranking & Window Functions
+
+#### Q6.2: Trip Cost Distribution & Distance Profiling (NTILE 4 Quartiles)
+
+| Cost Quartile | Total Trips | Fare Range ($) | Avg Fare ($) | Avg Distance (mi) | Gross Revenue ($) | Revenue Share (%) | Operational & Fare Profiling Context |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **Q1 (Lowest)** | 2,231,344 | $0.04 – $11.80 | $9.94 | 1.13 | $22,179,996.10 | 12.5% | **Short Local Hoppers:** Very short intra-neighborhood trips heavily concentrated in dense Manhattan cores. |
+| **Q2 (Mid-Low)** | 2,231,344 | $11.80 – $15.30 | $13.41 | 2.62 | $29,923,546.80 | 16.8% | **Standard Commutes:** Mid-town to lower/upper Manhattan cross-town rides. |
+| **Q3 (Mid-High)** | 2,231,343 | $15.30 – $20.80 | $17.59 | 4.97 | $39,259,543.51 | 22.1% | **Longer Borough Routes:** Mid-distance commutes connecting upper Manhattan to outer borough edges. |
+| **Q4 (Highest)** | 2,231,343 | $20.80 – $401,095.62* | $38.69 | 14.35 | $86,330,178.54 | 48.6% | **High-Yield & Long-Haul:** Airport runs (JFK/LGA), cross-borough transit, and long-distance out-of-town fares. |
+| **Total / Overall** | **8,925,374** | **—** | **$19.91** | **5.77** | **$177,693,264.95** | **100.0%** | **Q1 2022 Cost Quartile Baseline** |
+
+*\*Note: The maximum value of $401,095.62 reflects rare uncleaned meter log anomalies present in Q4 raw logs.*
+
+#### Key Analytical Insights:
+1. **Pareto Concentration in Q4:** The highest cost quartile (Q4) accounts for **48.6% of all gross revenue** (~$86.3M) despite making up exactly 25% of the total trip volume.
+2. **Distance-to-Fare Scaling:** Average trip distance scales nearly 13x from Q1 (1.13 miles) to Q4 (14.35 miles), demonstrating that distance is the primary structural driver separating standard metered fares from high-yield long-haul and airport routes.
+
+### Step 6: Advanced Ranking & Window Functions
+
+#### Q6.3: Month-over-Month (MoM) Revenue Growth by Vendor (LAG Window Function)
+
+| Vendor ID | Month | Quarter | Month Name | Current Month Revenue ($) | Previous Month Revenue ($) | MoM Growth (%) | Performance & Operational Context |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **1 (Creative Mobile Tech)** | 1 | Q1 | Jan | $13,920,989.78 | *NULL* | *N/A* | Baseline month for Q1 2022. |
+| | 2 | Q1 | Feb | $16,684,808.16 | $13,920,989.78 | **+19.85%** | Strong post-holiday demand recovery across urban routes. |
+| | 3 | Q1 | Mar | $20,923,460.57 | $16,684,808.16 | **+25.40%** | Peak Q1 acceleration driven by increased business commuting. |
+| **2 (VeriFone Inc.)** | 1 | Q1 | Jan | $32,445,677.36 | *NULL* | *N/A* | Baseline month; holds primary market share (~70%+). |
+| | 2 | Q1 | Feb | $40,431,839.34 | $32,445,677.36 | **+24.61%** | Substantial revenue gain across airport and high-turnover cores. |
+| | 3 | Q1 | Mar | $52,407,716.50 | $40,431,839.34 | **+29.62%** | Highest single-month growth and total revenue contribution ($52.4M). |
+| **5 (Specialty / Other)** | 1 | Q1 | Jan | $2,159.92 | *NULL* | *N/A* | Low-volume niche or test terminal logging. |
+| | 2 | Q1 | Feb | $1,834.31 | $2,159.92 | **-15.08%** | Volume contraction on specialty rides. |
+| | 3 | Q1 | Mar | $762.10 | $1,834.31 | **-58.45%** | Sharp drop-off in terminal logging activity. |
+| **6 (Specialty / Other)** | 1 | Q1 | Jan | $212,038.93 | *NULL* | *N/A* | Baseline month for secondary technology supplier. |
+| | 2 | Q1 | Feb | $285,967.41 | $212,038.93 | **+34.87%** | High percentage surge on modest baseline. |
+| | 3 | Q1 | Mar | $376,010.57 | $285,967.41 | **+31.49%** | Consistent expansion through late Q1. |
+
+#### Key Analytical Insights:
+1. **Accelerating Market Expansion:** Both primary vendors (**Vendor 1** and **Vendor 2**) experienced compounding MoM revenue growth each month in Q1, moving from **~20–24% growth in February** up to **~25–29% growth in March**.
+2. **Vendor Market Share Dominance:** **Vendor 2 (VeriFone)** generated **$125.28M total in Q1** compared to **Vendor 1's $51.53M**, capturing over **70% of total vendor revenue** while maintaining slightly faster MoM growth trajectories.
