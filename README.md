@@ -1,4 +1,4 @@
-# NYC Yellow Taxi Q1 2022 — Exploratory Data Analysis (EDA) & Data Pipeline Log
+# NYC Taxi Trip Data Exploration: Uncovering Operational Bottlenecks & Revenue Drivers via SQL
 
 ## 📌 Executive Summary
 This project performs an end-to-end Exploratory Data Analysis (EDA) and data quality audit on **9+ million records** of New York City Yellow Taxi trip data covering Q1 2022 (January – March). 
